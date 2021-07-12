@@ -1,4 +1,10 @@
-FROM docker:{{ env.version }}
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
+
+FROM docker:20.10-rc
 
 # https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies
 RUN set -eux; \
@@ -6,9 +12,7 @@ RUN set -eux; \
 		btrfs-progs \
 		e2fsprogs \
 		e2fsprogs-extra \
-{{ if ["19.03", "19.03-rc"] | index(env.version) | not then ( -}}
 		ip6tables \
-{{ ) else "" end -}}
 		iptables \
 		openssl \
 		shadow-uidmap \
@@ -34,7 +38,7 @@ RUN set -eux; \
 	echo 'dockremap:165536:65536' >> /etc/subgid
 
 # https://github.com/docker/docker/tree/master/hack/dind
-ENV DIND_COMMIT {{ .dindCommit }}
+ENV DIND_COMMIT 42b1175eda071c0e9121e1d64345928384a93df1
 
 RUN set -eux; \
 	wget -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"; \

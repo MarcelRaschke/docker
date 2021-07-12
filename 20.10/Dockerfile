@@ -1,4 +1,10 @@
-FROM alpine:{{ .alpine }}
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
+
+FROM alpine:3.13
 
 RUN apk add --no-cache \
 		ca-certificates \
@@ -11,7 +17,7 @@ RUN apk add --no-cache \
 # - docker run --rm debian:stretch grep '^hosts:' /etc/nsswitch.conf
 RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
 
-ENV DOCKER_VERSION {{ .version }}
+ENV DOCKER_VERSION 20.10.7
 # TODO ENV DOCKER_SHA256
 # https://github.com/docker/docker-ce/blob/5b073ee2cf564edee5adca05eee574142f7627bb/components/packaging/static/hash_files !!
 # (no SHA file artifacts on download.docker.com yet as of 2017-06-07 though)
@@ -20,30 +26,18 @@ RUN set -eux; \
 	\
 	apkArch="$(apk --print-arch)"; \
 	case "$apkArch" in \
-{{
-	[
-		.arches | to_entries[]
-		| select(.value.dockerUrl and (.key | startswith("windows-") | not))
-		| .key as $bashbrewArch
-		| (
-			{
-				amd64: "x86_64",
-				arm32v6: "armhf",
-				arm32v7: "armv7",
-				arm64v8: "aarch64",
-			}
-			| .[$bashbrewArch] // $bashbrewArch
-		) as $apkArch
-		| .value
-		| (
--}}
-		{{ $apkArch | @sh }}) \
-			url={{ .dockerUrl | @sh }}; \
+		'x86_64') \
+			url='https://download.docker.com/linux/static/stable/x86_64/docker-20.10.7.tgz'; \
 			;; \
-{{
-		)
-	] | add
--}}
+		'armhf') \
+			url='https://download.docker.com/linux/static/stable/armel/docker-20.10.7.tgz'; \
+			;; \
+		'armv7') \
+			url='https://download.docker.com/linux/static/stable/armhf/docker-20.10.7.tgz'; \
+			;; \
+		'aarch64') \
+			url='https://download.docker.com/linux/static/stable/aarch64/docker-20.10.7.tgz'; \
+			;; \
 		*) echo >&2 "error: unsupported architecture ($apkArch)"; exit 1 ;; \
 	esac; \
 	\
