@@ -1,5 +1,10 @@
-{{ include "shared" -}}
-FROM docker:{{ env.version }}-cli
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "apply-templates.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
+
+FROM docker:20.10-cli
 
 # https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies
 RUN set -eux; \
@@ -34,21 +39,31 @@ RUN set -eux; \
 
 RUN set -eux; \
 	\
-	{{
-		download({
-			arches: .arches,
-			urlKey: "dockerUrl",
-			# TODO sha256Key (once Docker publishes them 😭)
-			target: "docker.tgz",
-		})
-	}}; \
+	apkArch="$(apk --print-arch)"; \
+	case "$apkArch" in \
+		'x86_64') \
+			url='https://download.docker.com/linux/static/stable/x86_64/docker-20.10.21.tgz'; \
+			;; \
+		'armhf') \
+			url='https://download.docker.com/linux/static/stable/armel/docker-20.10.21.tgz'; \
+			;; \
+		'armv7') \
+			url='https://download.docker.com/linux/static/stable/armhf/docker-20.10.21.tgz'; \
+			;; \
+		'aarch64') \
+			url='https://download.docker.com/linux/static/stable/aarch64/docker-20.10.21.tgz'; \
+			;; \
+		*) echo >&2 "error: unsupported 'docker.tgz' architecture ($apkArch)"; exit 1 ;; \
+	esac; \
+	\
+	wget -O 'docker.tgz' "$url"; \
 	\
 	tar --extract \
 		--file docker.tgz \
 		--strip-components 1 \
 		--directory /usr/local/bin/ \
 		--no-same-owner \
-# we exclude the CLI binary because we already extracted that over in the "docker:{{ env.version }}-cli" image that we're FROM and we don't want to duplicate those bytes again in this layer
+# we exclude the CLI binary because we already extracted that over in the "docker:20.10-cli" image that we're FROM and we don't want to duplicate those bytes again in this layer
 		--exclude 'docker/docker' \
 	; \
 	rm docker.tgz; \
@@ -59,7 +74,7 @@ RUN set -eux; \
 	runc --version
 
 # https://github.com/docker/docker/tree/master/hack/dind
-ENV DIND_COMMIT {{ .dindCommit }}
+ENV DIND_COMMIT 42b1175eda071c0e9121e1d64345928384a93df1
 
 RUN set -eux; \
 	wget -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"; \
